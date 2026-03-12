@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เข้าสู่ระบบ - ระบบติดตามรถยนต์</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Prompt', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 h-screen flex items-center justify-center p-4">
+
+    <!-- Login Container -->
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col items-center">
+        <!-- Header -->
+        <div class="bg-slate-900 w-full py-8 px-6 flex flex-col items-center justify-center text-center">
+            <div class="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-blue-500/30">
+                <i class="fa-solid fa-truck-fast text-white text-3xl"></i>
+            </div>
+            <h1 class="text-2xl font-bold text-white tracking-wide">ระบบติดตามรถยนต์</h1>
+ 
+        </div>
+
+        <!-- Form Area -->
+        <div class="w-full p-8">
+            <h2 class="text-xl font-semibold text-slate-800 mb-6 text-center">ลงชื่อเข้าใช้งาน</h2>
+            
+            <form id="loginForm" class="space-y-5" onsubmit="handleLogin(event)">
+                
+                <!-- Email/Username -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">ชื่อผู้ใช้งาน</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-user text-slate-400"></i>
+                        </div>
+                        <input type="text" id="username" required
+                            class="block w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors"
+                            placeholder="admin">
+                    </div>
+                </div>
+
+                <!-- Password -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-sm font-medium text-slate-700">รหัสผ่าน</label>
+                        <a href="#" class="text-xs font-medium text-blue-600 hover:text-blue-500">ลืมรหัสผ่าน?</a>
+                    </div>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-lock text-slate-400"></i>
+                        </div>
+                        <input type="password" id="password" required
+                            class="block w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors"
+                            placeholder="••••••••">
+                    </div>
+                </div>
+
+                <!-- Error Message -->
+                <div id="errorMessage" class="hidden text-red-500 text-sm text-center font-medium bg-red-50 p-2 rounded-lg border border-red-100">
+                    <i class="fa-solid fa-circle-exclamation mr-1"></i> ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" 
+                    class="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                    เข้าสู่ระบบ
+                </button>
+            </form>
+
+           
+        </div>
+    </div>
+
+    <script>
+        // Check if already logged in
+        if (localStorage.getItem('isLoggedIn') === 'true') {
+            window.location.href = 'index.html';
+        }
+
+        function handleLogin(event) {
+            event.preventDefault(); // Prevent submisson
+            
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            const errorMsg = document.getElementById('errorMessage');
+
+            // Hardcoded credentials for Demo
+            if (user === 'admin' && pass === '1234') {
+                errorMsg.classList.add('hidden');
+                
+                // Store session securely in local browser storage (Mock)
+                localStorage.setItem('isLoggedIn', 'true');
+                localStorage.setItem('currentUser', 'ผู้ดูแลระบบ');
+                
+                // Add a small delay for realistic feel
+                const btn = document.querySelector('button[type="submit"]');
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> กำลังเข้าสู่ระบบ...';
+                
+                setTimeout(() => {
+                    window.location.href = 'index.html'; // Redirect to Homepage
+                }, 800);
+            } else {
+                errorMsg.classList.remove('hidden');
+                
+                // Shake animation for error
+                const form = document.getElementById('loginForm');
+                form.classList.add('animate-pulse');
+                setTimeout(() => form.classList.remove('animate-pulse'), 500);
+            }
+        }
+    </script>
+</body>
+</html>

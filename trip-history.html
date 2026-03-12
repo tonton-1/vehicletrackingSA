@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ประวัติการเดินทาง - ระบบติดตามรถยนต์</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
+  <style>
+    body {
+      font-family: 'Prompt', sans-serif;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 10px;
+    }
+
+    #tripMap {
+      height: 500px;
+      z-index: 1;
+    }
+
+    /* Playback Controls */
+    .playback-slider {
+      width: 100%;
+      height: 8px;
+      border-radius: 5px;
+      background: #e2e8f0;
+      outline: none;
+      opacity: 0.9;
+      transition: opacity 0.2s;
+    }
+
+    .playback-slider:hover {
+      opacity: 1;
+    }
+
+    .playback-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #3b82f6;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .playback-slider::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #3b82f6;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Custom Marker Styles */
+    .marker-start {
+      background-color: #22c55e;
+      width: 2rem;
+      height: 2rem;
+      display: block;
+      position: relative;
+      border-radius: 2rem 2rem 0;
+      transform: rotate(45deg);
+      border: 3px solid #fff;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    .marker-end {
+      background-color: #ef4444;
+      width: 2rem;
+      height: 2rem;
+      display: block;
+      position: relative;
+      border-radius: 2rem 2rem 0;
+      transform: rotate(45deg);
+      border: 3px solid #fff;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    .marker-event {
+      background-color: #f59e0b;
+      width: 1.5rem;
+      height: 1.5rem;
+      display: block;
+      position: relative;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .marker-current {
+      background-color: #3b82f6;
+      width: 1.8rem;
+      height: 1.8rem;
+      display: block;
+      position: relative;
+      border-radius: 1.8rem 1.8rem 0;
+      transform: rotate(45deg);
+      border: 3px solid #fff;
+      box-shadow: 0 4px 8px rgba(59, 130, 246, 0.5);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        box-shadow: 0 4px 8px rgba(59, 130, 246, 0.5);
+      }
+
+      50% {
+        box-shadow: 0 4px 16px rgba(59, 130, 246, 0.8);
+      }
+    }
+
+    /* Timeline row hover effect */
+    .timeline-row:hover {
+      background-color: #f1f5f9;
+      cursor: pointer;
+    }
+
+    .timeline-row.active {
+      background-color: #dbeafe;
+      border-left: 3px solid #3b82f6;
+    }
+  </style>
+
+  <script>
+    // Authentication Check
+    if (localStorage.getItem('isLoggedIn') !== 'true') {
+        window.location.href = 'login.html';
+    }
+
+    function logout() {
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('currentUser');
+        window.location.href = 'login.html';
+    }
+  </script>
+</head>
+
+<body class="bg-slate-50 h-screen flex overflow-hidden">
+
+  <!-- Sidebar -->
+  <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col transition-all duration-300">
+    <div class="h-16 flex items-center px-6 border-b border-slate-800">
+      <i class="fa-solid fa-truck-fast text-blue-500 text-2xl mr-3"></i>
+      <span class="text-white text-lg font-semibold tracking-wide">ระบบติดตามรถยนต์</span>
+    </div>
+    <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+      <a href="index.html"
+        class="flex items-center px-4 py-3 hover:bg-slate-800 hover:text-white rounded-lg transition-colors">
+        <i class="fa-solid fa-chart-pie w-6"></i>
+        <span class="font-medium">แดชบอร์ด</span>
+      </a>
+      <a href="vehicle-management.html"
+        class="flex items-center px-4 py-3 hover:bg-slate-800 hover:text-white rounded-lg transition-colors">
+        <i class="fa-solid fa-car w-6"></i>
+        <span class="font-medium">จัดการยานพาหนะ</span>
+      </a>
+      <a href="trip-history.html"
+        class="flex items-center px-4 py-3 bg-blue-600 text-white rounded-lg transition-colors">
+        <i class="fa-solid fa-route w-6"></i>
+        <span class="font-medium">ประวัติการเดินทาง</span>
+      </a>
+      <!-- <a href="#" class="flex items-center px-4 py-3 hover:bg-slate-800 hover:text-white rounded-lg transition-colors">
+        <i class="fa-solid fa-file-lines w-6"></i>
+        <span class="font-medium">รายงานสรุป</span>
+      </a>
+      <a href="#" class="flex items-center px-4 py-3 hover:bg-slate-800 hover:text-white rounded-lg transition-colors">
+        <i class="fa-solid fa-gear w-6"></i>
+        <span class="font-medium">ตั้งค่าระบบ</span>
+      </a> -->
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 flex flex-col h-screen overflow-hidden">
+
+    <!-- Header -->
+    <header class="h-16 bg-white shadow-sm flex items-center justify-between px-8 z-20">
+      <h1 class="text-xl font-semibold text-slate-800">
+        <i class="fa-solid fa-route text-blue-500 mr-2"></i>
+        ประวัติการเดินทาง
+      </h1>
+      <div class="flex items-center space-x-6">
+        <button class="text-slate-400 hover:text-slate-600 relative">
+         
+        </button>
+        <div class="flex items-center space-x-4">
+          <div class="flex items-center cursor-pointer" onclick="editProfileName()">
+            <img id="userAvatar" src="https://ui-avatars.com/api/?name=Admin+User&background=0D8ABC&color=fff" alt="User"
+              class="w-9 h-9 rounded-full border-2 border-slate-200">
+            <span id="userNameDisplay" class="ml-3 text-sm font-medium text-slate-700">ผู้ดูแลระบบ</span>
+          </div>
+          <button onclick="logout()" class="text-xs text-red-500 hover:text-red-700 font-medium transition border border-red-200 hover:border-red-400 rounded px-3 py-1">
+            <i class="fa-solid fa-right-from-bracket mr-1"></i> ออกจากระบบ
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content Area -->
+    <div class="flex-1 overflow-auto p-8">
+
+      <!-- 1. Search & Filters Section -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
+        <h2 class="text-lg font-semibold text-slate-800 mb-4 flex items-center">
+          <i class="fa-solid fa-filter text-blue-500 mr-2"></i>
+          ค้นหาและกำหนดเงื่อนไข
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">เลือกยานพาหนะ</label>
+            <select id="vehicleSelect"
+              class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              <option value="">-- เลือกรถ --</option>
+              <option value="1">กท 1234 - นายสมชาย วงศ์สวัสดิ์</option>
+              <option value="2">1กข 5678 - นายประเสริฐ ใจดี</option>
+              <option value="3">นข 9876 - นายวิชัย รักษาชล</option>
+              <option value="4">80-4321 - นายสุรชัย มั่นคง</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">วันที่เริ่มต้น</label>
+            <input type="date" id="startDate"
+              class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">วันที่สิ้นสุด</label>
+            <input type="date" id="endDate"
+              class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          </div>
+
+          <div class="flex items-end">
+            <button onclick="searchTrip()"
+              class="w-full px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition flex items-center justify-center">
+              <i class="fa-solid fa-search mr-2"></i>
+              ค้นหา
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Trip Summary Statistics -->
+      <div id="summarySection" class="hidden">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm text-slate-500">ระยะทางรวม</span>
+              <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <i class="fa-solid fa-road text-blue-600"></i>
+              </div>
+            </div>
+            <p class="text-3xl font-bold text-slate-800" id="totalDistance">0</p>
+            <p class="text-xs text-slate-500 mt-1">กิโลเมตร</p>
+          </div>
+
+          <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm text-slate-500">เวลาเดินทาง</span>
+              <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                <i class="fa-solid fa-clock text-green-600"></i>
+              </div>
+            </div>
+            <p class="text-3xl font-bold text-slate-800" id="totalDuration">0</p>
+            <p class="text-xs text-slate-500 mt-1">ชั่วโมง | <span id="idleTime">0</span> นาที Idle</p>
+          </div>
+
+          <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm text-slate-500">ความเร็ว</span>
+              <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <i class="fa-solid fa-gauge-high text-yellow-600"></i>
+              </div>
+            </div>
+            <p class="text-3xl font-bold text-slate-800" id="avgSpeed">0</p>
+            <p class="text-xs text-slate-500 mt-1">km/h เฉลี่ย | สูงสุด <span id="maxSpeed">0</span> km/h</p>
+          </div>
+
+          <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm text-slate-500">การใช้น้ำมัน</span>
+              <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                <i class="fa-solid fa-gas-pump text-purple-600"></i>
+              </div>
+            </div>
+            <p class="text-3xl font-bold text-slate-800" id="fuelConsumption">0</p>
+            <p class="text-xs text-slate-500 mt-1">ลิตร (ประมาณการ)</p>
+          </div>
+        </div>
+
+        <!-- 3. Start and End Trip Details -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-100 flex items-start">
+            <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-1">
+              <i class="fa-solid fa-location-dot text-green-600 text-xl"></i>
+            </div>
+            <div class="ml-4">
+              <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-1">จุดเริ่มต้น (Start)</h3>
+              <p class="text-lg font-medium text-slate-800" id="startLocation">-</p>
+              <div class="flex items-center text-sm text-slate-500 mt-2">
+                <i class="fa-regular fa-clock mr-2"></i>
+                <span id="startTime">-</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-100 flex items-start">
+            <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mt-1">
+              <i class="fa-solid fa-flag-checkered text-red-600 text-xl"></i>
+            </div>
+            <div class="ml-4">
+              <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-1">จุดสิ้นสุด (End)</h3>
+              <p class="text-lg font-medium text-slate-800" id="endLocation">-</p>
+              <div class="flex items-center text-sm text-slate-500 mt-2">
+                <i class="fa-regular fa-clock mr-2"></i>
+                <span id="endTime">-</span>
+              </div>
+            </div>
+          </div>
+        </div>      <!-- No Data Message -->
+      <div id="noDataMessage" class="text-center py-20">
+        <i class="fa-solid fa-magnifying-glass text-6xl text-slate-300 mb-4"></i>
+        <p class="text-slate-500 text-lg">กรุณาเลือกยานพาหนะและช่วงเวลา แล้วกดค้นหา</p>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    let tripData = [];
+
+    // Search Trip
+    async function searchTrip() {
+      const vehicleId = document.getElementById('vehicleSelect').value;
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+
+      if (!vehicleId) {
+        Swal.fire({ icon: 'warning', title: 'กรุณาเลือกยานพาหนะ', text: 'ต้องเลือกรถก่อนค้นหาครับ', confirmButtonColor: '#3b82f6' });
+        return;
+      }
+
+      if (!startDate || !endDate) {
+        Swal.fire({ icon: 'warning', title: 'กรุณาระบุวันที่', text: 'ต้องเลือกวันที่เริ่มต้นและวันที่สิ้นสุด', confirmButtonColor: '#3b82f6' });
+        return;
+      }
+
+      if (new Date(startDate) > new Date(endDate)) {
+        Swal.fire({ icon: 'warning', title: 'วันที่ไม่ถูกต้อง', text: 'วันที่เริ่มต้อนต้องไม่เกินวันที่สิ้นสุด', confirmButtonColor: '#3b82f6' });
+        return;
+      }
+
+      // Show loading
+      Swal.fire({
+        title: 'กำลังค้นหา...',
+        text: 'โปรดรอสักครู่',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      try {
+        let url = `/api/trips?vehicleId=${vehicleId}&startDate=${startDate}&endDate=${endDate}`;
+        const response = await fetch(url);
+        const data = await response.json();
+
+        tripData = data.map(d => ({
+          timestamp: new Date(d.timestamp),
+          lat: d.lat,
+          lng: d.lng,
+          speed: d.speed,
+          location: d.location,
+          status: d.status,
+          alert: d.alert
+        }));
+
+        Swal.close();
+
+        if (tripData.length === 0) {
+          Swal.fire({
+            icon: 'info',
+            title: 'ไม่พบข้อมูล',
+            text: 'ไม่พบข้อมูลการเดินทางสำหรับรถคันนี้ในช่วงวันที่ระบุ',
+            confirmButtonColor: '#3b82f6'
+          });
+          document.getElementById('summarySection').classList.add('hidden');
+          document.getElementById('noDataMessage').classList.remove('hidden');
+          return;
+        }
+
+        document.getElementById('noDataMessage').classList.add('hidden');
+        document.getElementById('summarySection').classList.remove('hidden');
+        calculateStatistics();
+
+      } catch (error) {
+        console.error("Error fetching trips:", error);
+        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด!', text: 'ไม่สามารถดึงข้อมูลการเดินทางได้ กรุณาตรวจสอบเซิร์ฟเวอร์' });
+      }
+    }
+
+    // Calculate Statistics
+    function calculateStatistics() {
+      if (tripData.length === 0) return;
+
+      // Total distance (approximate)
+      const distance = tripData.length * 0.5; // ประมาณ 0.5 km ต่อจุด
+      document.getElementById('totalDistance').textContent = distance.toFixed(1);
+
+      // Duration
+      const startTime = tripData[0].timestamp;
+      const endTime = tripData[tripData.length - 1].timestamp;
+      const durationHours = (endTime - startTime) / (1000 * 60 * 60);
+      document.getElementById('totalDuration').textContent = durationHours.toFixed(1);
+
+      // Idle time
+      const idleRecords = tripData.filter(d => d.speed === 0);
+      const idleMinutes = idleRecords.length * 2; // 2 นาทีต่อจุด
+      document.getElementById('idleTime').textContent = idleMinutes;
+
+      // Speed
+      const speeds = tripData.map(d => d.speed);
+      const avgSpeed = speeds.reduce((a, b) => a + b, 0) / speeds.length;
+      const maxSpeed = Math.max(...speeds);
+      document.getElementById('avgSpeed').textContent = avgSpeed.toFixed(0);
+      document.getElementById('maxSpeed').textContent = maxSpeed;
+
+      // Fuel consumption (approximate: 10 km/L)
+      const fuelConsumption = distance / 10;
+      document.getElementById('fuelConsumption').textContent = fuelConsumption.toFixed(1);
+
+      // Start and End Locations
+      const startPoint = tripData[0];
+      const endPoint = tripData[tripData.length - 1];
+
+      document.getElementById('startLocation').textContent = startPoint.location || 'ไม่ระบุสถานที่';
+      document.getElementById('startTime').textContent = formatLogTime(startPoint.timestamp);
+
+      document.getElementById('endLocation').textContent = endPoint.location || 'ไม่ระบุสถานที่';
+      document.getElementById('endTime').textContent = formatLogTime(endPoint.timestamp);
+    }
+
+    // Helper: Format Time
+    function formatLogTime(date) {
+      return date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+
+    // -- Profile Name Feature --
+    document.addEventListener("DOMContentLoaded", () => {
+      const savedName = localStorage.getItem("currentUser");
+      const savedAvatarUrl = localStorage.getItem("currentUserAvatar");
+      if (savedName) {
+        document.getElementById("userNameDisplay").textContent = savedName;
+      }
+      if (savedAvatarUrl) {
+        document.getElementById("userAvatar").src = savedAvatarUrl;
+      }
+    });
+
+    async function editProfileName() {
+      const currentName = document.getElementById("userNameDisplay").textContent;
+      const { value: newName } = await Swal.fire({
+        title: 'แก้ไขชื่อโปรไฟล์',
+        input: 'text',
+        inputValue: currentName,
+        inputPlaceholder: 'กรอกชื่อใหม่...',
+        showCancelButton: true,
+        confirmButtonColor: '#3b82f6',
+        cancelButtonColor: '#94a3b8',
+        confirmButtonText: 'บันทึก',
+        cancelButtonText: 'ยกเลิก',
+        inputValidator: (value) => {
+          if (!value) {
+            return 'กรุณากรอกชื่อ!';
+          }
+        }
+      });
+
+      if (newName) {
+        const urlSafeName = encodeURIComponent(newName);
+        const newAvatarUrl = `https://ui-avatars.com/api/?name=${urlSafeName}&background=0D8ABC&color=fff`;
+
+        // Update DOM
+        document.getElementById("userNameDisplay").textContent = newName;
+        document.getElementById("userAvatar").src = newAvatarUrl;
+
+        // Save to localStorage
+        localStorage.setItem("currentUser", newName);
+        localStorage.setItem("currentUserAvatar", newAvatarUrl);
+
+        Swal.fire({
+          icon: 'success',
+          title: 'อัปเดตชื่อสำเร็จ',
+          showConfirmButton: false,
+          timer: 1500
+        });
+      }
+    }
+  </script>
+</body>
+
+</html>

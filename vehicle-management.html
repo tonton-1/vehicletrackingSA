@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>จัดการยานพาหนะ - ระบบติดตามรถยนต์</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <style>
+    body {
+      font-family: 'Prompt', sans-serif;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 10px;
+    }
+
+    /* Modal Animation */
+    .modal-backdrop {
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-enter {
+      animation: modalSlideIn 0.3s ease-out;
+    }
+
+    @keyframes modalSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-50px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Status Badge */
+    .status-active {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .status-offline {
+      background: #f1f5f9;
+      color: #475569;
+    }
+
+    .status-maintenance {
+      background: #fef3c7;
+      color: #92400e;
+    }
+  </style>
+</head>
+
+<body class="bg-slate-50 h-screen flex overflow-hidden">
+
+  <!-- Sidebar -->
+  <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col transition-all duration-300">
+    <div class="h-16 flex items-center px-6 border-b border-slate-800">
+      <i class="fa-solid fa-truck-fast text-blue-500 text-2xl mr-3"></i>
+      <span class="text-white text-lg font-semibold tracking-wide">ระบบติดตามรถยนต์</span>
+    </div>
+    <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+      <a href="index.html"
+        class="flex items-center px-4 py-3 hover:bg-slate-800 hover:text-white rounded-lg transition-colors">
+        <i class="fa-solid fa-chart-pie w-6"></i>
+        <span class="font-medium">แดชบอร์ด</span>
+      </a>
+      <a href="vehicle-management.html"
+        class="flex items-center px-4 py-3 bg-blue-600 text-white rounded-lg transition-colors">
+        <i class="fa-solid fa-car w-6"></i>
+        <span class="font-medium">จัดการยานพาหนะ</span>
+      </a>
+      <a href="trip-history.html"
+        class="flex items-center px-4 py-3 hover:bg-slate-800 hover:text-white rounded-lg transition-colors">
+        <i class="fa-solid fa-route w-6"></i>
+        <span class="font-medium">ประวัติการเดินทาง</span>
+      </a>
+      <!-- <a href="#" class="flex items-center px-4 py-3 hover:bg-slate-800 hover:text-white rounded-lg transition-colors">
+        <i class="fa-solid fa-file-lines w-6"></i>
+        <span class="font-medium">รายงานสรุป</span>
+      </a>
+      <a href="#" class="flex items-center px-4 py-3 hover:bg-slate-800 hover:text-white rounded-lg transition-colors">
+        <i class="fa-solid fa-gear w-6"></i>
+        <span class="font-medium">ตั้งค่าระบบ</span>
+      </a> -->
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 flex flex-col h-screen overflow-hidden">
+
+    <!-- Header -->
+    <header class="h-16 bg-white shadow-sm flex items-center justify-between px-8 z-20">
+      <h1 class="text-xl font-semibold text-slate-800">
+        <i class="fa-solid fa-car text-blue-500 mr-2"></i>
+        จัดการยานพาหนะ
+      </h1>
+      <div class="flex items-center space-x-6">
+        <button class="text-slate-400 hover:text-slate-600 relative">
+
+         
+        </button>
+        <div class="flex items-center space-x-4">
+          <div class="flex items-center cursor-pointer" onclick="editProfileName()">
+            <img id="userAvatar" src="https://ui-avatars.com/api/?name=Admin+User&background=0D8ABC&color=fff" alt="User"
+              class="w-9 h-9 rounded-full border-2 border-slate-200">
+            <span id="userNameDisplay" class="ml-3 text-sm font-medium text-slate-700">ผู้ดูแลระบบ</span>
+          </div>
+          <button onclick="logout()" class="text-xs text-red-500 hover:text-red-700 font-medium transition border border-red-200 hover:border-red-400 rounded px-3 py-1">
+            <i class="fa-solid fa-right-from-bracket mr-1"></i> ออกจากระบบ
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content Area -->
+    <div class="flex-1 overflow-auto p-8">
+
+      <!-- Action Bar -->
+      <div class="mb-6 flex justify-between items-center">
+        <div class="flex items-center space-x-4">
+          <div class="relative">
+            <input type="text" id="searchInput" placeholder="ค้นหาทะเบียนรถ, ยี่ห้อ, คนขับ..."
+              class="pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-80">
+            <i class="fa-solid fa-search absolute left-3 top-3 text-slate-400"></i>
+          </div>
+          <select class="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            <option value="all">ทั้งหมด</option>
+            <option value="active">เปิดใช้งาน</option>
+            <option value="offline">ออฟไลน์</option>
+            <option value="maintenance">ซ่อมบำรุง</option>
+          </select>
+        </div>
+        <button onclick="openAddVehicleModal()"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition flex items-center">
+          <i class="fa-solid fa-plus mr-2"></i>
+          เพิ่มรถใหม่
+        </button>
+      </div>
+
+      <!-- Statistics Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-slate-500 mb-1">รถทั้งหมด</p>
+              <p class="text-3xl font-bold text-slate-800" id="stat-total">0</p>
+            </div>
+            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+              <i class="fa-solid fa-truck text-blue-600 text-xl"></i>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-slate-500 mb-1">เปิดใช้งาน</p>
+              <p class="text-3xl font-bold text-green-600" id="stat-active">0</p>
+            </div>
+            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+              <i class="fa-solid fa-circle-check text-green-600 text-xl"></i>
+            </div>
+          </div>
+        </div>
+        <div class="bg-slate-50 rounded-xl p-6 border border-slate-50 invisible">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-slate-50 mb-1">ซ่อมบำรุง</p>
+              <p class="text-3xl font-bold text-slate-50" id="stat-maintenance">0</p>
+            </div>
+            <div class="w-12 h-12 bg-slate-50 rounded-lg flex items-center justify-center">
+              <i class="fa-solid fa-wrench text-slate-50 text-xl"></i>
+            </div>
+          </div>
+        </div>
+      </div>  
+
+      <!-- Vehicle Table -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50 text-slate-600 text-sm border-b border-slate-200">
+                <th class="p-4 font-semibold">รูปภาพ</th>
+                <th class="p-4 font-semibold">ทะเบียน / ยี่ห้อรถ</th>
+                <th class="p-4 font-semibold">พนักงานขับรถ</th>
+                <th class="p-4 font-semibold">GPS Device</th>
+                <th class="p-4 font-semibold">สถานะ</th>
+                <th class="p-4 font-semibold text-center">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="vehicleTableBody" class="text-sm">
+              <!-- Data will be inserted here by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Add/Edit Vehicle Modal -->
+  <div id="vehicleModal" class="hidden fixed inset-0 z-50 overflow-y-auto modal-backdrop">
+    <div class="flex items-center justify-center min-h-screen px-4">
+      <div class="fixed inset-0 bg-black opacity-50" onclick="closeVehicleModal()"></div>
+
+      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto modal-enter">
+        <!-- Modal Header -->
+        <div
+          class="sticky top-0 bg-white border-b border-slate-200 px-8 py-6 flex justify-between items-center rounded-t-2xl z-10">
+          <h2 class="text-2xl font-bold text-slate-800">
+            <i class="fa-solid fa-car-side text-blue-500 mr-2"></i>
+            <span id="modalTitle">เพิ่มรถยนต์ใหม่</span>
+          </h2>
+          <button onclick="closeVehicleModal()" class="text-slate-400 hover:text-slate-600 transition">
+            <i class="fa-solid fa-xmark text-2xl"></i>
+          </button>
+        </div>
+
+        <!-- Modal Body -->
+        <form id="vehicleForm" class="p-8 space-y-8">
+
+          <!-- 1. ข้อมูลพื้นฐานของรถยนต์ -->
+          <div class="space-y-4">
+            <h3 class="text-lg font-semibold text-slate-800 border-b border-slate-200 pb-3">
+              <i class="fa-solid fa-info-circle text-blue-500 mr-2"></i>
+              1. ข้อมูลพื้นฐานของรถยนต์
+            </h3>
+
+            <div class="grid grid-cols-1 gap-6">
+              <!-- รูปภาพรถ -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">รูปภาพรถยนต์</label>
+                <div class="flex items-center space-x-4">
+                  <div id="vehicleImagePreview"
+                    class="w-32 h-32 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center bg-slate-50">
+                    <i class="fa-solid fa-image text-slate-400 text-3xl"></i>
+                  </div>
+                  <div>
+                    <input type="file" id="vehicleImage" accept="image/*" class="hidden" onchange="previewImage(event)">
+                    <button type="button" onclick="document.getElementById('vehicleImage').click()"
+                      class="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition">
+                      <i class="fa-solid fa-upload mr-2"></i>อัพโหลดรูปภาพ
+                    </button>
+                    <p class="text-xs text-slate-500 mt-2">รองรับไฟล์ JPG, PNG (ขนาดไม่เกิน 5MB)</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ทะเบียนรถ, ยี่ห้อ, รุ่น -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">หมายเลขทะเบียนรถ *</label>
+                  <input type="text" id="licensePlate" required placeholder="เช่น กท 1234"
+                    class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">ยี่ห้อรถ *</label>
+                  <input type="text" id="brand" required placeholder="เช่น Toyota"
+                    class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">รุ่นรถ *</label>
+                  <input type="text" id="model" required placeholder="เช่น Hilux Revo"
+                    class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+              </div>
+
+              <!-- ประเภทรถ, ความจุถังน้ำมัน -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">ประเภทรถ *</label>
+                  <select id="vehicleType" required
+                    class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="">-- เลือกประเภทรถ --</option>
+                    <option value="pickup">รถกระบะ</option>
+                    <option value="truck">รถบรรทุก 6 ล้อ</option>
+                    <option value="van">รถตู้</option>
+                    <option value="sedan">รถเก๋ง</option>
+                    <option value="other">อื่นๆ</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">ความจุถังน้ำมัน (ลิตร) *</label>
+                  <input type="number" id="fuelCapacity" required placeholder="เช่น 80" min="0"
+                    class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. ข้อมูลอุปกรณ์พิกัด GPS -->
+          <div class="space-y-4">
+            <h3 class="text-lg font-semibold text-slate-800 border-b border-slate-200 pb-3">
+              <i class="fa-solid fa-satellite-dish text-blue-500 mr-2"></i>
+              2. ข้อมูลอุปกรณ์พิกัด (GPS Device)
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">รหัสประจำเครื่อง GPS (IMEI) *</label>
+                <input type="text" id="gpsImei" required placeholder="เช่น 123456789012345" maxlength="15"
+                  class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">เบอร์ซิมการ์ด *</label>
+                <input type="text" id="simCard" required placeholder="เช่น 0812345678"
+                  class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">สถานะการทำงาน *</label>
+                <select id="deviceStatus" required
+                  class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                  <option value="active">เปิดใช้งาน (Active)</option>
+                  <option value="offline">ออฟไลน์ (Offline)</option>
+                  
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. ข้อมูลพนักงานขับรถ -->
+          <div class="space-y-4">
+            <h3 class="text-lg font-semibold text-slate-800 border-b border-slate-200 pb-3">
+              <i class="fa-solid fa-user-tie text-blue-500 mr-2"></i>
+              3. ข้อมูลพนักงานขับรถ (Driver Assignment)
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">ชื่อพนักงานขับรถประจำรถ *</label>
+                <input type="text" id="driverName" required placeholder="เช่น นายสมชาย ใจดี"
+                  class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">เบอร์โทรศัพท์ติดต่อ *</label>
+                <input type="tel" id="driverPhone" required placeholder="เช่น 0812345678"
+                  class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. ข้อมูลด้านการซ่อมบำรุง -->
+          <div class="space-y-4">
+            <h3 class="text-lg font-semibold text-slate-800 border-b border-slate-200 pb-3">
+              <i class="fa-solid fa-tools text-blue-500 mr-2"></i>
+              4. ข้อมูลด้านการซ่อมบำรุง (Maintenance & Compliance)
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">เลขไมล์ล่าสุด (km)</label>
+                <input type="number" id="currentMileage" placeholder="เช่น 50000" min="0"
+                  class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">วันที่เช็คครั้งล่าสุด</label>
+                <input type="date" id="lastMaintenanceDate"
+                  class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">หมายเหตุ</label>
+              <textarea id="maintenanceNotes" rows="3" placeholder="บันทึกข้อมูลการซ่อมบำรุงเพิ่มเติม..."
+                class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+            </div>
+          </div>
+
+          <!-- Form Actions -->
+          <div class="flex justify-end space-x-4 pt-6 border-t border-slate-200">
+            <button type="button" onclick="closeVehicleModal()"
+              class="px-6 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition">
+              ยกเลิก
+            </button>
+            <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+              <i class="fa-solid fa-save mr-2"></i>
+              บันทึกข้อมูล
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Mock Data - ข้อมูลรถทั้งหมด
+    let vehicles = [];
+
+    async function loadVehicles() {
+      try {
+        const response = await fetch('/api/vehicles');
+        const apiData = await response.json();
+        
+        vehicles = apiData.map(v => ({
+          id: v.id,
+          image: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=200&h=200&fit=crop',
+          licensePlate: v.plate,
+          brand: v.brand || '',
+          model: v.model || '',
+          vehicleType: v.vehicle_type || 'pickup',
+          fuelCapacity: v.fuel_capacity || 0,
+          gpsImei: v.gps_imei || '',
+          simCard: v.sim_card || '',
+          deviceStatus: v.engineOn ? 'active' : 'offline',
+          driverName: v.driver,
+          driverPhone: v.driver_phone || '',
+          currentMileage: v.current_mileage || 0,
+          lastMaintenanceDate: v.last_maintenance_date ? v.last_maintenance_date.split('T')[0] : '',
+          maintenanceNotes: v.maintenance_notes || ''
+        }));
+        
+        // Assign different images per vehicle type
+        const vehicleImages = [
+          'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=200&h=200&fit=crop',
+          'https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?w=200&h=200&fit=crop',
+          'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=200&h=200&fit=crop',
+          'https://images.unsplash.com/photo-1609521263047-f8f205293f24?w=200&h=200&fit=crop'
+        ];
+        vehicles.forEach((v, i) => { v.image = vehicleImages[i % vehicleImages.length]; });
+
+        document.getElementById('stat-total').textContent = vehicles.length;
+        document.getElementById('stat-active').textContent = vehicles.filter(v => v.deviceStatus === 'active').length;
+        document.getElementById('stat-maintenance').textContent = vehicles.filter(v => v.deviceStatus === 'maintenance').length;
+
+        renderTable();
+      } catch (error) {
+        console.error("Error fetching vehicles:", error);
+      }
+    }
+
+    // Render Table
+    function renderTable(data = vehicles) {
+      const tbody = document.getElementById('vehicleTableBody');
+      tbody.innerHTML = '';
+
+      data.forEach(v => {
+        const statusClass = v.deviceStatus === 'active' ? 'status-active' :
+          v.deviceStatus === 'maintenance' ? 'status-maintenance' : 'status-offline';
+        const statusText = v.deviceStatus === 'active' ? 'เปิดใช้งาน' :
+          v.deviceStatus === 'maintenance' ? 'ซ่อมบำรุง' : 'ออฟไลน์';
+
+        // Check expiry dates
+        const today = new Date();
+        const taxDate = new Date(v.taxExpiry);
+        const daysUntilTaxExpiry = Math.floor((taxDate - today) / (1000 * 60 * 60 * 24));
+        const taxWarning = daysUntilTaxExpiry < 30 ? '<i class="fa-solid fa-triangle-exclamation text-red-500 ml-2"></i>' : '';
+
+        const row = `
+          <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
+            <td class="p-4">
+              <img src="${v.image}" alt="${v.licensePlate}" class="w-20 h-20 object-cover rounded-lg shadow-sm">
+            </td>
+            <td class="p-4">
+              <div class="font-semibold text-slate-800">${v.licensePlate}</div>
+              <div class="text-sm text-slate-500">${v.brand} ${v.model}</div>
+              <div class="text-xs text-slate-400 mt-1">
+                <i class="fa-solid fa-gas-pump mr-1"></i>${v.fuelCapacity}L
+              </div>
+            </td>
+            <td class="p-4">
+              <div class="flex items-center">
+                <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-2">
+                  <i class="fa-solid fa-user text-sm"></i>
+                </div>
+                <div>
+                  <div class="font-medium text-slate-700">${v.driverName}</div>
+                  <div class="text-xs text-slate-500">
+                    <i class="fa-solid fa-phone mr-1"></i>${v.driverPhone}
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td class="p-4">
+              <div class="text-sm">
+                <div class="text-slate-700"><i class="fa-solid fa-microchip mr-1"></i>${v.gpsImei}</div>
+                <div class="text-slate-500 text-xs mt-1"><i class="fa-solid fa-sim-card mr-1"></i>${v.simCard}</div>
+              </div>
+            </td>
+            <td class="p-4">
+              <span class="px-3 py-1 ${statusClass} rounded-full text-xs font-medium">
+                ${statusText}
+              </span>
+            </td>
+            <td class="p-4">
+              <div class="flex items-center justify-center space-x-2">
+                <button onclick="editVehicle(${v.id})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition" title="แก้ไข">
+                  <i class="fa-solid fa-edit"></i>
+                </button>
+                
+                <button onclick="deleteVehicle(${v.id})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition" title="ลบ">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+        tbody.innerHTML += row;
+      });
+    }
+
+    // Modal Functions
+    function openAddVehicleModal() {
+      document.getElementById('modalTitle').textContent = 'เพิ่มรถยนต์ใหม่';
+      document.getElementById('vehicleForm').reset();
+      document.getElementById('vehicleImagePreview').innerHTML = '<i class="fa-solid fa-image text-slate-400 text-3xl"></i>';
+      document.getElementById('vehicleModal').classList.remove('hidden');
+    }
+
+    function closeVehicleModal() {
+      document.getElementById('vehicleModal').classList.add('hidden');
+    }
+
+    let currentEditId = null;
+
+    function editVehicle(id) {
+      const vehicle = vehicles.find(v => v.id === id);
+      if (!vehicle) return;
+
+      currentEditId = id;
+      document.getElementById('modalTitle').textContent = 'แก้ไขข้อมูลรถยนต์';
+
+      // Populate form
+      document.getElementById('licensePlate').value = vehicle.licensePlate;
+      document.getElementById('brand').value = vehicle.brand;
+      document.getElementById('model').value = vehicle.model;
+      document.getElementById('vehicleType').value = vehicle.vehicleType;
+      document.getElementById('fuelCapacity').value = vehicle.fuelCapacity;
+      document.getElementById('gpsImei').value = vehicle.gpsImei;
+      document.getElementById('simCard').value = vehicle.simCard;
+      document.getElementById('deviceStatus').value = vehicle.deviceStatus;
+      document.getElementById('driverName').value = vehicle.driverName;
+      document.getElementById('driverPhone').value = vehicle.driverPhone;
+      document.getElementById('currentMileage').value = vehicle.currentMileage;
+      document.getElementById('lastMaintenanceDate').value = vehicle.lastMaintenanceDate;
+      document.getElementById('maintenanceNotes').value = vehicle.maintenanceNotes;
+
+      // Show image preview
+      if (vehicle.image) {
+        document.getElementById('vehicleImagePreview').innerHTML = `<img src="${vehicle.image}" class="w-full h-full object-cover rounded-lg">`;
+      }
+
+      document.getElementById('vehicleModal').classList.remove('hidden');
+    }
+
+    function viewHistory(id) {
+      alert(`ดูประวัติการเดินทางของรถ ID: ${id}\n(ฟีเจอร์นี้จะเชื่อมต่อกับหน้าประวัติการเดินทาง)`);
+    }
+
+    async function deleteVehicle(id) {
+      const result = await Swal.fire({
+        title: 'ยืนยันการลบ',
+        text: 'คุณต้องการลบรถคันนี้ออกจากระบบหรือไม่? ไม่สามารถย้อนกลับได้!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#94a3b8',
+        confirmButtonText: 'ใช่, ลบเลย!',
+        cancelButtonText: 'ยกเลิก'
+      });
+
+      if (result.isConfirmed) {
+        vehicles = vehicles.filter(v => v.id !== id);
+        renderTable();
+        Swal.fire({
+          icon: 'success',
+          title: 'ลบแล้ว!',
+          text: 'ลบข้อมูลรถเรียบร้อยแล้ว',
+          timer: 2000,
+          showConfirmButton: false
+        });
+      }
+    }
+
+    // Image Preview
+    function previewImage(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          document.getElementById('vehicleImagePreview').innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover rounded-lg">`;
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    // Form Submit
+    document.getElementById('vehicleForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const formData = {
+        licensePlate: document.getElementById('licensePlate').value,
+        brand: document.getElementById('brand').value,
+        model: document.getElementById('model').value,
+        vehicleType: document.getElementById('vehicleType').value,
+        fuelCapacity: document.getElementById('fuelCapacity').value,
+        gpsImei: document.getElementById('gpsImei').value,
+        simCard: document.getElementById('simCard').value,
+        deviceStatus: document.getElementById('deviceStatus').value,
+        driverName: document.getElementById('driverName').value,
+        driverPhone: document.getElementById('driverPhone').value,
+        currentMileage: document.getElementById('currentMileage').value,
+        lastMaintenanceDate: document.getElementById('lastMaintenanceDate').value,
+        maintenanceNotes: document.getElementById('maintenanceNotes').value
+      };
+
+      try {
+        let response;
+        if (currentEditId) {
+          response = await fetch(`/api/vehicles/${currentEditId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+          });
+        } else {
+          response = await fetch('/api/vehicles', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+          });
+        }
+
+        if (response.ok) {
+          await Swal.fire({
+            icon: 'success',
+            title: 'สำเร็จ!',
+            text: 'บันทึกข้อมูลเรียบร้อยแล้ว!',
+            timer: 2000,
+            showConfirmButton: false
+          });
+          closeVehicleModal();
+          loadVehicles();
+        } else {
+          try {
+            const errorData = await response.json();
+            Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด!', text: errorData.error || 'ไม่สามารถบันทึกข้อมูลได้' });
+          } catch (e) {
+            Swal.fire({ icon: 'error', title: 'เซิร์ฟเวอร์ไม่ตอบสนอง!', text: 'กรุณารีสตาร์ทเซิร์ฟเวอร์แล้วลองใหม่' });
+          }
+        }
+      } catch (error) {
+        console.error('Error updating vehicle:', error);
+        Swal.fire({ icon: 'error', title: 'ไม่สามารถเชื่อมต่อได้!', text: 'กรุณาตรวจสอบการเชื่อมต่อเซิร์ฟเวอร์' });
+      }
+    });
+
+    // Search Function
+    document.getElementById('searchInput').addEventListener('input', function (e) {
+      const searchTerm = e.target.value.toLowerCase();
+      const filtered = vehicles.filter(v =>
+        v.licensePlate.toLowerCase().includes(searchTerm) ||
+        v.brand.toLowerCase().includes(searchTerm) ||
+        v.model.toLowerCase().includes(searchTerm) ||
+        v.driverName.toLowerCase().includes(searchTerm)
+      );
+      renderTable(filtered);
+    });
+
+    // Initialize
+    loadVehicles();
+
+    // -- Profile Name Feature --
+    document.addEventListener("DOMContentLoaded", () => {
+      const savedName = localStorage.getItem("currentUser");
+      const savedAvatarUrl = localStorage.getItem("currentUserAvatar");
+      if (savedName) {
+        document.getElementById("userNameDisplay").textContent = savedName;
+      }
+      if (savedAvatarUrl) {
+        document.getElementById("userAvatar").src = savedAvatarUrl;
+      }
+    });
+
+    async function editProfileName() {
+      const currentName = document.getElementById("userNameDisplay").textContent;
+      const { value: newName } = await Swal.fire({
+        title: 'แก้ไขชื่อโปรไฟล์',
+        input: 'text',
+        inputValue: currentName,
+        inputPlaceholder: 'กรอกชื่อใหม่...',
+        showCancelButton: true,
+        confirmButtonColor: '#3b82f6',
+        cancelButtonColor: '#94a3b8',
+        confirmButtonText: 'บันทึก',
+        cancelButtonText: 'ยกเลิก',
+        inputValidator: (value) => {
+          if (!value) {
+            return 'กรุณากรอกชื่อ!';
+          }
+        }
+      });
+
+      if (newName) {
+        const urlSafeName = encodeURIComponent(newName);
+        const newAvatarUrl = `https://ui-avatars.com/api/?name=${urlSafeName}&background=0D8ABC&color=fff`;
+
+        // Update DOM
+        document.getElementById("userNameDisplay").textContent = newName;
+        document.getElementById("userAvatar").src = newAvatarUrl;
+
+        // Save to localStorage
+        localStorage.setItem("currentUser", newName);
+        localStorage.setItem("currentUserAvatar", newAvatarUrl);
+
+        Swal.fire({
+          icon: 'success',
+          title: 'อัปเดตชื่อสำเร็จ',
+          showConfirmButton: false,
+          timer: 1500
+        });
+      }
+    }
+  </script>
+</body>
+
+</html>
