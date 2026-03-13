@@ -1,6 +1,6 @@
 # vehicletrackingSA
 
-ระบบติดตามรถยนต์แบบเว็บ ประกอบด้วยหน้าแดชบอร์ด, จัดการยานพาหนะ, ประวัติการเดินทาง และหน้าเข้าสู่ระบบ โดยใช้ Node.js, Express และ MySQL
+A web-based vehicle tracking system with a dashboard, vehicle management, trip history, and login page. The project uses Node.js, Express, and MySQL.
 
 ## Tech Stack
 
@@ -11,49 +11,49 @@
 - Tailwind CSS
 - Leaflet
 
-## โครงสร้างหลักของโปรเจกต์
+## Main Project Files
 
-- `server.js` เซิร์ฟเวอร์ Express และ REST API
-- `database.js` การเชื่อมต่อ MySQL และสร้างข้อมูลตัวอย่าง
-- `index.html` หน้าแดชบอร์ดหลัก
-- `vehicle-management.html` หน้าจัดการยานพาหนะ
-- `trip-history.html` หน้าประวัติการเดินทาง
-- `login.html` หน้าเข้าสู่ระบบ
-- `docker-compose.yml` สำหรับรัน MySQL และ phpMyAdmin
+- `server.js` Express server and REST API
+- `database.js` MySQL connection and mock data initialization
+- `index.html` Main dashboard page
+- `vehicle-management.html` Vehicle management page
+- `trip-history.html` Trip history page
+- `login.html` Login page
+- `docker-compose.yml` MySQL and phpMyAdmin services
 
-## สิ่งที่ต้องมี
+## Requirements
 
-- Node.js 18 ขึ้นไป
+- Node.js 18 or later
 - Docker Desktop
 
-## การติดตั้ง
+## Installation
 
-ติดตั้ง dependencies:
+Install dependencies:
 
 ```bash
 npm install
 ```
 
-เปิดฐานข้อมูล MySQL และ phpMyAdmin:
+Start MySQL and phpMyAdmin:
 
 ```bash
 docker-compose up -d
 ```
 
-## การรันโปรเจกต์
+## Run the Project
 
-รันเซิร์ฟเวอร์:
+Start the server:
 
 ```bash
 node server.js
 ```
 
-จากนั้นเปิดใช้งานที่:
+Then open:
 
-- แอปหลัก: http://localhost:3000/login.html
+- Main app: http://localhost:3000/login.html
 - phpMyAdmin: http://localhost:8081
 
-ข้อมูลฐานข้อมูลเริ่มต้น:
+Default database settings:
 
 - Host: `localhost`
 - Port: `3308`
@@ -61,38 +61,36 @@ node server.js
 - Password: `root`
 - Database: `fleet_db`
 
-## บัญชีเข้าสู่ระบบตัวอย่าง
+## Demo Login
 
 - Username: `admin`
 - Password: `1234`
 
-## ฟีเจอร์หลัก
+## Main Features
 
-- ดูภาพรวมรถในระบบบนหน้าแดชบอร์ด
-- เพิ่มและแก้ไขข้อมูลยานพาหนะ
-- ดูประวัติการเดินทางของรถแต่ละคัน
-- ใช้งานแผนที่ด้วย Leaflet
-- มีข้อมูลตัวอย่างสำหรับทดลองระบบ
+- View an overview of vehicles on the dashboard
+- Add and edit vehicle information
+- View trip history for each vehicle
+- Display maps using Leaflet
+- Use mock data for testing and demonstration
 
-## API หลัก
+## Main API Endpoints
 
-- `GET /api/vehicles` ดึงรายการรถทั้งหมด
-- `GET /api/vehicles/:id` ดึงรายละเอียดรถตามรหัส
-- `POST /api/vehicles` เพิ่มรถใหม่
-- `PUT /api/vehicles/:id` แก้ไขข้อมูลรถ
-- `GET /api/trips?vehicleId=<id>&startDate=<YYYY-MM-DD>&endDate=<YYYY-MM-DD>` ดึงประวัติการเดินทาง
+- `GET /api/vehicles` Get all vehicles
+- `GET /api/vehicles/:id` Get vehicle details by ID
+- `POST /api/vehicles` Create a new vehicle
+- `PUT /api/vehicles/:id` Update a vehicle
+- `GET /api/trips?vehicleId=<id>&startDate=<YYYY-MM-DD>&endDate=<YYYY-MM-DD>` Get trip history
 
-## หมายเหตุสำคัญ
+## Important Note
 
-เมื่อเริ่มระบบ `database.js` จะลบตาราง `vehicles` และ `trips` แล้วสร้างใหม่พร้อมข้อมูลตัวอย่าง เพื่อรีเซ็ต encoding และข้อมูลเริ่มต้น ดังนั้นข้อมูลที่เพิ่มเองจะหายทุกครั้งที่รีสตาร์ตเซิร์ฟเวอร์
+On startup, `database.js` drops the `vehicles` and `trips` tables and recreates them with mock data to reset encoding and initial records. This means any manually added data will be lost every time the server restarts.
 
-ถ้าต้องการใช้งานจริง ควรแก้ logic ใน `database.js` ก่อน
+If you want to use this project beyond demo purposes, update the initialization logic in `database.js` first.
 
-## การพัฒนาต่อ
+## Suggested Improvements
 
-แนวทางที่ควรทำต่อ:
-
-- เพิ่ม script `start` และ `dev` ใน `package.json`
-- ย้ายข้อมูล login ออกจาก frontend
-- แยกไฟล์ CSS/JS ออกจาก HTML
-- ปรับ `database.js` ไม่ให้ลบข้อมูลทุกครั้งที่เริ่มระบบ
+- Add `start` and `dev` scripts to `package.json`
+- Move login handling out of the frontend
+- Separate CSS and JavaScript from the HTML files
+- Update `database.js` so it does not reset data on every startup
