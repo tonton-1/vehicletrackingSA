@@ -17,14 +17,9 @@ async function initDb() {
     const connection = await pool.getConnection();
     console.log("Connected to the MySQL database.");
 
-    // Drop tables to clear out garbled data
-    console.log("Dropping existing tables to reset encoding...");
-    await connection.execute("DROP TABLE IF EXISTS trips");
-    await connection.execute("DROP TABLE IF EXISTS vehicles");
-
-    // Create vehicles table
+    // Create vehicles table (if it doesn't exist)
     await connection.execute(`
-      CREATE TABLE vehicles (
+      CREATE TABLE IF NOT EXISTS vehicles (
         id INT AUTO_INCREMENT PRIMARY KEY,
         plate VARCHAR(255) NOT NULL,
         driver VARCHAR(255) NOT NULL,
@@ -45,9 +40,9 @@ async function initDb() {
       ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
     `);
 
-    // Create trips table
+    // Create trips table (if it doesn't exist)
     await connection.execute(`
-      CREATE TABLE trips (
+      CREATE TABLE IF NOT EXISTS trips (
         id INT AUTO_INCREMENT PRIMARY KEY,
         vehicle_id INT NOT NULL,
         timestamp DATETIME NOT NULL,
@@ -60,6 +55,27 @@ async function initDb() {
         FOREIGN KEY(vehicle_id) REFERENCES vehicles(id)
       ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
     `);
+
+    // Create settings table (if it doesn't exist)
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS settings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        setting_key VARCHAR(255) UNIQUE NOT NULL,
+        setting_value VARCHAR(255) NOT NULL
+      ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+    `);
+
+    // Check if settings table is empty, if so, populate it
+    const [settingsRows] = await connection.execute(
+      "SELECT COUNT(*) as count FROM settings",
+    );
+    if (settingsRows[0].count === 0) {
+      console.log("Inserting default settings...");
+      const insertSettingSql =
+        "INSERT INTO settings (setting_key, setting_value) VALUES (?, ?)";
+      await connection.execute(insertSettingSql, ["speed_limit", "80"]);
+      await connection.execute(insertSettingSql, ["idle_time_limit", "15"]);
+    }
 
     // Check if vehicles table is empty, if so, populate it
     const [rows] = await connection.execute(

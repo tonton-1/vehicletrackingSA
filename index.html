@@ -91,14 +91,14 @@
         >
           <i class="fa-solid fa-file-lines w-6"></i>
           <span class="font-medium">รายงานสรุป</span>
-        </a>
+        </a> -->
         <a
-          href="#"
+          href="settings.html"
           class="flex items-center px-4 py-3 hover:bg-slate-800 hover:text-white rounded-lg transition-colors"
         >
           <i class="fa-solid fa-gear w-6"></i>
           <span class="font-medium">ตั้งค่าระบบ</span>
-        </a> -->
+        </a>
       </nav>
     </aside>
 
@@ -246,7 +246,6 @@
                 >
                   <th class="p-4 font-medium">ทะเบียนรถ</th>
                   <th class="p-4 font-medium">พนักงานขับรถ</th>
-                  <th class="p-4 font-medium">จังหวัดปัจจุบัน</th>
                   <th class="p-4 font-medium">ความเร็ว (km/h)</th>
                   <th class="p-4 font-medium">สถานะเครื่องยนต์</th>
                   <th class="p-4 font-medium">การแจ้งเตือนพฤติกรรม</th>
@@ -262,31 +261,11 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-      // ตัวแปรเก็บข้อมูลยานพาหนะ
+      // ตัวแปรเก็บข้อมูลยานพาหนะและการตั้งค่า
       let vehicles = [];
+      let globalSettings = { speed_limit: 80, idle_time_limit: 15 };
 
-      // ฟังก์ชัน Reverse Geocoding เพื่อหาจังหวัดจากพิกัด
-      async function getProvince(lat, lng) {
-        try {
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=th`,
-          );
-          const data = await response.json();
 
-          // ดึงชื่อจังหวัดจาก address
-          const province =
-            data.address?.province ||
-            data.address?.state ||
-            data.address?.city ||
-            data.address?.county ||
-            "ไม่ทราบจังหวัด";
-
-          return province;
-        } catch (error) {
-          console.error("Error fetching province:", error);
-          return "ไม่สามารถระบุได้";
-        }
-      }
 
       // 1. ตั้งค่าแผนที่ Leaflet (Center ที่กทม.)
       const map = L.map("map").setView([13.745, 100.52], 13);
@@ -304,6 +283,16 @@
       // 2. ฟังก์ชันประมวลผลสถานะและสร้าง UI (แบบ async)
       async function initVehicles() {
         try {
+          // Fetch settings first
+          try {
+            const settingsRes = await fetch("/api/settings");
+            if (settingsRes.ok) {
+              const sData = await settingsRes.json();
+              if (sData.speed_limit) globalSettings.speed_limit = parseInt(sData.speed_limit);
+              if (sData.idle_time_limit) globalSettings.idle_time_limit = parseInt(sData.idle_time_limit);
+            }
+          } catch (e) { console.error("Could not fetch settings", e); }
+
           const response = await fetch("/api/vehicles");
           vehicles = await response.json();
 
@@ -316,14 +305,11 @@
           for (const v of vehicles) {
             if (!v.engineOn) {
               offline++;
-            } else if (v.speed > 80 || (v.speed === 0 && v.engineOn)) {
+            } else if (v.speed > globalSettings.speed_limit || (v.speed === 0 && v.engineOn)) {
               alerts++;
             } else {
               moving++;
             }
-
-            // ดึงชื่อจังหวัดจากพิกัด
-            v.province = await getProvince(v.lat, v.lng);
 
             renderVehicle(v);
           }
@@ -354,7 +340,7 @@
           statusBadge =
             '<span class="text-slate-500"><i class="fa-solid fa-check-circle mr-1"></i> ปกติ (ออฟไลน์)</span>';
           alertColor = "#94a3b8"; // gray
-        } else if (v.speed > 80) {
+        } else if (v.speed > globalSettings.speed_limit) {
           statusBadge =
             '<span class="text-red-600 font-medium"><i class="fa-solid fa-triangle-exclamation mr-1"></i> ความเร็วเกินกำหนด!</span>';
           alertColor = "#ef4444"; // red
@@ -389,7 +375,6 @@
                     <div class="font-prompt">
                         <strong class="text-base">${v.plate}</strong><br>
                         <span class="text-sm text-slate-600">คนขับ: ${v.driver}</span><br>
-                        <span class="text-sm text-slate-600"><i class="fa-solid fa-map-marker-alt mr-1"></i>จังหวัด: ${v.province}</span><br>
                         <div class="mt-2 pt-2 border-t border-slate-200">
                             ${statusBadge}
                         </div>
@@ -413,11 +398,8 @@
                         ${v.driver}
                     </div>
                 </td>
-                <td class="p-4 text-slate-600">
-                    <i class="fa-solid fa-map-marker-alt text-blue-500 mr-1"></i> ${v.province}
-                </td>
                 <td class="p-4">
-                    <span class="font-medium ${v.speed > 80 ? "text-red-600" : "text-slate-700"}">${v.speed}</span>
+                    <span class="font-medium ${v.speed > globalSettings.speed_limit ? "text-red-600" : "text-slate-700"}">${v.speed}</span>
                 </td>
                 <td class="p-4">${engineBadge}</td>
                 <td class="p-4">${statusBadge}</td>

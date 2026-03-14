@@ -201,6 +201,68 @@ app.put("/api/vehicles/:id", async (req, res) => {
   }
 });
 
+// Delete vehicle
+app.delete("/api/vehicles/:id", async (req, res) => {
+  const id = req.params.id;
+  try {
+    // 1. Delete associated trips first to avoid Foreign Key constraint errors
+    await pool.query("DELETE FROM trips WHERE vehicle_id = ?", [id]);
+
+    // 2. Delete the vehicle
+    const [result] = await pool.query("DELETE FROM vehicles WHERE id = ?", [
+      id,
+    ]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Vehicle not found" });
+    }
+
+    res.json({ message: "Vehicle deleted successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to delete vehicle" });
+  }
+});
+
+// GET Settings
+app.get("/api/settings", async (req, res) => {
+  try {
+    const [rows] = await pool.query("SELECT setting_key, setting_value FROM settings");
+    const settings = {};
+    rows.forEach(row => {
+      settings[row.setting_key] = row.setting_value;
+    });
+    res.json(settings);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch settings" });
+  }
+});
+
+// POST Settings
+app.post("/api/settings", async (req, res) => {
+  const settings = req.body;
+  
+  if (!settings || typeof settings !== 'object') {
+    return res.status(400).json({ error: "Invalid settings format" });
+  }
+  
+  try {
+    for (const [key, value] of Object.entries(settings)) {
+      // Upsert: Insert or Update
+      await pool.query(
+        "INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)",
+        [key, value.toString()]
+      );
+    }
+    
+    res.json({ message: "Settings updated successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to update settings" });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });

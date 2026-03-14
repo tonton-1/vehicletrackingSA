@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ตั้งค่าระบบ - ระบบติดตามรถยนต์</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body { font-family: 'Prompt', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+    <script>
+      // Authentication Check
+      if (localStorage.getItem('isLoggedIn') !== 'true') {
+          window.location.href = 'login.html';
+      }
+      function logout() {
+          localStorage.removeItem('isLoggedIn');
+          localStorage.removeItem('currentUser');
+          window.location.href = 'login.html';
+      }
+    </script>
+</head>
+<body class="bg-slate-50 h-screen flex overflow-hidden">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col transition-all duration-300">
+        <div class="h-16 flex items-center px-6 border-b border-slate-800">
+            <i class="fa-solid fa-truck-fast text-blue-500 text-2xl mr-3"></i>
+            <span class="text-white text-lg font-semibold tracking-wide">ระบบติดตามรถยนต์</span>
+        </div>
+        <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+            <a href="index.html" class="flex items-center px-4 py-3 hover:bg-slate-800 hover:text-white rounded-lg transition-colors">
+                <i class="fa-solid fa-chart-pie w-6"></i>
+                <span class="font-medium">แดชบอร์ด</span>
+            </a>
+            <a href="vehicle-management.html" class="flex items-center px-4 py-3 hover:bg-slate-800 hover:text-white rounded-lg transition-colors">
+                <i class="fa-solid fa-car w-6"></i>
+                <span class="font-medium">จัดการยานพาหนะ</span>
+            </a>
+            <a href="trip-history.html" class="flex items-center px-4 py-3 hover:bg-slate-800 hover:text-white rounded-lg transition-colors">
+                <i class="fa-solid fa-route w-6"></i>
+                <span class="font-medium">ประวัติการเดินทาง</span>
+            </a>
+            <a href="settings.html" class="flex items-center px-4 py-3 bg-blue-600 text-white rounded-lg transition-colors">
+                <i class="fa-solid fa-gear w-6"></i>
+                <span class="font-medium">ตั้งค่าระบบ</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col h-screen overflow-hidden">
+        <!-- Header -->
+        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-8 z-20">
+            <h1 class="text-xl font-semibold text-slate-800">
+                <i class="fa-solid fa-gear text-blue-500 mr-2"></i>
+                ตั้งค่าระบบ
+            </h1>
+            <div class="flex items-center space-x-6">
+                <div class="flex items-center space-x-4">
+                  <div class="flex items-center cursor-pointer" onclick="editProfileName()">
+                    <img id="userAvatar" src="https://ui-avatars.com/api/?name=Admin+User&background=0D8ABC&color=fff" alt="User" class="w-9 h-9 rounded-full border-2 border-slate-200">
+                    <span id="userNameDisplay" class="ml-3 text-sm font-medium text-slate-700">ผู้ดูแลระบบ</span>
+                  </div>
+                  <button onclick="logout()" class="text-xs text-red-500 hover:text-red-700 font-medium transition border border-red-200 hover:border-red-400 rounded px-3 py-1">
+                    <i class="fa-solid fa-right-from-bracket mr-1"></i> ออกจากระบบ
+                  </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <div class="flex-1 overflow-auto p-8">
+            <div class="max-w-3xl mx-auto">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="p-6 border-b border-slate-100 bg-slate-50 flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-4">
+                            <i class="fa-solid fa-bell"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-semibold text-slate-800">การแจ้งเตือนพฤติกรรมการขับขี่</h2>
+                            <p class="text-sm text-slate-500">ตั้งค่าเกณฑ์การแจ้งเตือนต่างๆ สำหรับยานพาหนะในระบบ</p>
+                        </div>
+                    </div>
+                    
+                    <form id="settingsForm" class="p-8 space-y-6">
+                        <!-- Speed Limit -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-start border-b border-slate-100 pb-6">
+                            <div class="md:col-span-1">
+                                <label class="block text-sm font-medium text-slate-800">ความเร็วสูงสุด (Speed Limit)</label>
+                                <p class="text-xs text-slate-500 mt-1">ใช้ในการแจ้งเตือนเมื่อรถวิ่งเกินความเร็วที่กำหนด</p>
+                            </div>
+                            <div class="md:col-span-2 relative">
+                                <input type="number" id="speed_limit" name="speed_limit" required min="1" max="250"
+                                    class="w-full pl-4 pr-16 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <span class="absolute right-4 top-2.5 text-slate-400 text-sm font-medium">km/h</span>
+                            </div>
+                        </div>
+
+                        <!-- Idle Time -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-start border-b border-slate-100 pb-6">
+                            <div class="md:col-span-1">
+                                <label class="block text-sm font-medium text-slate-800">จอดติดเครื่องนานเกิน (Idle Time)</label>
+                                <p class="text-xs text-slate-500 mt-1">แจ้งเตือนหากรถความเร็วเป็น 0 แต่เครื่องยนต์ยังทำงาน</p>
+                            </div>
+                            <div class="md:col-span-2 relative">
+                                <input type="number" id="idle_time_limit" name="idle_time_limit" required min="1" max="600"
+                                    class="w-full pl-4 pr-16 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <span class="absolute right-4 top-2.5 text-slate-400 text-sm font-medium">นาที</span>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="flex justify-end pt-4">
+                            <button type="submit" 
+                                class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition flex items-center shadow-sm">
+                                <i class="fa-solid fa-save mr-2"></i>
+                                บันทึกการตั้งค่า
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Load settings on startup
+        async function loadSettings() {
+            try {
+                const response = await fetch('/api/settings');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.speed_limit) document.getElementById('speed_limit').value = data.speed_limit;
+                    if (data.idle_time_limit) document.getElementById('idle_time_limit').value = data.idle_time_limit;
+                }
+            } catch (error) {
+                console.error("Failed to load settings:", error);
+                Swal.fire({ icon: 'error', title: 'ดึงข้อมูลไม่สำเร็จ', text: 'ไม่สามารถโหลดการตั้งค่าได้' });
+            }
+        }
+
+        // Save settings
+        document.getElementById('settingsForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const speed_limit = document.getElementById('speed_limit').value;
+            const idle_time_limit = document.getElementById('idle_time_limit').value;
+
+            try {
+                const response = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ speed_limit, idle_time_limit })
+                });
+
+                if (response.ok) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'บันทึกสำเร็จ!',
+                        text: 'อัปเดตการตั้งค่าระบบเรียบร้อยแล้ว',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: 'เกิดข้อผิดพลาดในการบันทึกข้อมูล' });
+                }
+            } catch (error) {
+                console.error("Failed to save settings:", error);
+                Swal.fire({ icon: 'error', title: 'ข้อผิดพลาด', text: 'ไม่สามารถติดต่อกับเซิร์ฟเวอร์ได้' });
+            }
+        });
+
+        // Initialize
+        loadSettings();
+
+        // -- Profile Name Feature --
+        document.addEventListener("DOMContentLoaded", () => {
+            const savedName = localStorage.getItem("currentUser");
+            const savedAvatarUrl = localStorage.getItem("currentUserAvatar");
+            if (savedName) document.getElementById("userNameDisplay").textContent = savedName;
+            if (savedAvatarUrl) document.getElementById("userAvatar").src = savedAvatarUrl;
+        });
+
+        async function editProfileName() {
+            const currentName = document.getElementById("userNameDisplay").textContent;
+            const { value: newName } = await Swal.fire({
+                title: 'แก้ไขชื่อโปรไฟล์',
+                input: 'text',
+                inputValue: currentName,
+                inputPlaceholder: 'กรอกชื่อใหม่...',
+                showCancelButton: true,
+                confirmButtonColor: '#3b82f6',
+                cancelButtonColor: '#94a3b8',
+                confirmButtonText: 'บันทึก',
+                cancelButtonText: 'ยกเลิก',
+                inputValidator: (value) => {
+                    if (!value) return 'กรุณากรอกชื่อ!';
+                }
+            });
+
+            if (newName) {
+                const urlSafeName = encodeURIComponent(newName);
+                const newAvatarUrl = `https://ui-avatars.com/api/?name=${urlSafeName}&background=0D8ABC&color=fff`;
+                document.getElementById("userNameDisplay").textContent = newName;
+                document.getElementById("userAvatar").src = newAvatarUrl;
+                localStorage.setItem("currentUser", newName);
+                localStorage.setItem("currentUserAvatar", newAvatarUrl);
+                Swal.fire({ icon: 'success', title: 'อัปเดตชื่อสำเร็จ', showConfirmButton: false, timer: 1500 });
+            }
+        }
+    </script>
+</body>
+</html>
