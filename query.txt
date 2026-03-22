@@ -7,3 +7,24 @@ INSERT INTO trips (vehicle_id, timestamp, lat, lng, speed, location, status, ale
 (5, '2026-03-14 09:00:00', 13.8032, 100.5618, 55, 'ห้าแยกลาดพร้าว', 'กำลังเดินทาง', ''),
 (5, '2026-03-14 09:15:00', 13.8200, 100.5750, 40, 'รัชโยธิน', 'กำลังเดินทาง', ''),
 (5, '2026-03-14 09:30:00', 13.8400, 100.5850, 0, 'สิ้นสุด - ม.เกษตร', 'จอดพัก', 'idle');
+
+
+INSERT INTO vehicles (plate, driver, driver_phone, brand, model, vehicle_type, fuel_capacity, gps_imei, sim_card, lat, lng, speed, engineOn, current_mileage, last_maintenance_date, maintenance_notes)
+VALUES (
+    'กค 5555',              -- plate
+    'นายทดสอบ ขับขี่',       -- driver
+    '0901234567',           -- driver_phone
+    'Honda',                -- brand
+    'Civic',                -- model
+    'car',                  -- vehicle_type
+    50,                     -- fuel_capacity
+    '987654321098765',      -- gps_imei
+    '0901234567',           -- sim_card
+    13.747,                 -- lat
+    100.539,                -- lng
+    0,                      -- speed
+    false,                  -- engineOn (false = offline, true = active)
+    15000,                  -- current_mileage
+    '2026-03-01',           -- last_maintenance_date (สามารถเป็น NULL ได้ถ้าไม่มี)
+    'เช็คระยะ 15,000 กม. เปลี่ยนน้ำมันเครื่อง' -- maintenance_notes (สามารถเป็น NULL ได้ถ้าไม่มี)
+);
